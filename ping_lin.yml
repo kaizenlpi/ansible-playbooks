@@ -1,0 +1,8 @@
+---
+- name: ping host
+  hosts: all
+
+  tasks: 
+    - action: ping
+      register: hello
+    - debug: msg="{hello.stdout}"

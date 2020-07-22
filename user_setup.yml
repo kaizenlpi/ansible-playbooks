@@ -1,0 +1,15 @@
+---
+- hosts: all
+  become: yes
+
+  tasks:
+    - name: create a new user 
+      name: username
+      password: 'password'
+      groups: 
+        - sudo
+      state: present
+      shell: /bin/bash
+      system: no
+      createhome: yes
+      home: /home/devops 

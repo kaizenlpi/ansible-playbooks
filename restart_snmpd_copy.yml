@@ -1,0 +1,11 @@
+---
+- name: restart snmpd
+  hosts: '{{ target}}' 
+  become: yes
+
+  tasks:    
+  - name: Enable snmpd
+    service: name=snmpd enabled=yes
+
+  - name: Start snmpd
+    service: name=snmpd state=started

@@ -1,0 +1,19 @@
+---
+- name: restart snmpd
+  hosts: '{{ target}}' 
+  become: yes
+
+  tasks:    
+#  - name: check snmp service status
+#    shell: service snmpd status
+#    register: service_output
+  
+  #- name: stop snmpd
+  #  service: name=snmpd enabled=yes state=stopped
+  #  register: service_output
+
+  - name: Enable snmpd
+    service: name=snmpd enabled=yes
+
+  - name: Start snmpd
+    service: name=snmpd state=started

@@ -1,0 +1,15 @@
+---
+
+- name: Restart snmpd on Windows Server
+  #hosts: atinmswn05
+  hosts: '{{ target }}'  
+  gather_facts: yes
+  #force_handlers: True
+
+
+  tasks:
+  
+  - name: Restart snmp
+    win_service:
+      name: snmp
+      state: started

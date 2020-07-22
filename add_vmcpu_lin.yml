@@ -1,0 +1,32 @@
+---
+- name: Stop virtual machine
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: "false"
+    folder: "{{ vm_folder }}"
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    name: "{{ vm_name }}"
+    state: "poweredoff"
+  delegate_to: "localhost"
+  register: stop_vm
+
+- name: reconfigure CPU and RAM of VM
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    name: "{{ vm_name }}"
+    #state: "poweredon"
+    state: "present"
+    validate_certs: "false"
+    folder: "{{ vm_folder }}"
+    hardware:
+      memory_mb: "{{ memory }}"
+      num_cpus: "{{ cpu }}"
+      scsi: "lsilogic"
+  delegate_to: "localhost"

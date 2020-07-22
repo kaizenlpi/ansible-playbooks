@@ -1,0 +1,12 @@
+---
+ - name: get top 5 processes consuming cpu and memory
+   hosts: all
+
+   tasks:
+    - name: get top 5 processes consuming cpu
+      ignore_errors: yes
+      shell: ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | head -n 6
+
+    - name: get top 5 processes consuming mem
+      ignore_errors: yes
+      shell: ps -eo pid,ppid,cmd,%mem --sort=-%mem | head -n 6

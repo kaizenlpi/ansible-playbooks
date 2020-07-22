@@ -1,0 +1,23 @@
+[lin]
+server1 ansible_host=168.111.1.1
+168.11.111.11
+
+[win]
+server2 ansible_host=168.44.244.91
+168.11.11.91
+
+[vcenter]
+
+[lin:vars]
+
+[win:vars]
+ansible_user= admin
+ansible_password= supersecretpassword
+ansible_connection=winrm
+ansible_port=5985
+ansible_winrm_server_cert_validation=ignore
+
+[vcenter:vars]
+ansible_connection = local
+vcenter_user = my domain\username
+vcenter_pass = supersecretpassword

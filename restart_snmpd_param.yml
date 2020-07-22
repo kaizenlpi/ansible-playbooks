@@ -1,0 +1,11 @@
+---
+- name: Connect to server and restart snmpd
+  hosts: '{{ target}}' 
+  become: yes
+
+  tasks: 
+  - name: Enable the Linux service
+    service: name='{{ service_name }}' enabled=yes
+
+  - name: Start the Linux service 
+    service: name='{{ service_name }}' state=started
