@@ -1,0 +1,8 @@
+---
+- name: Windows Server Install DNS server role
+  hosts: win 
+  tags: win
+
+  roles:
+  - { role: mrlesmithjr.windows-dns-server }
+

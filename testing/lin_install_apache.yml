@@ -1,0 +1,16 @@
+---
+
+- hosts: linux
+  become: yes
+  vars:
+    package_name: httpd
+
+  tasks:
+    - name: this installs a package
+      yum: "name={{ package_name }} update_cache=yes state=latest"
+      notify: enable apache
+
+  handlers:
+    - name: enable apache
+      service: "name={{ package_name }} enabled=yes state=started"
+

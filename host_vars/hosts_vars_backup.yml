@@ -1,0 +1,13 @@
+linux:
+  server1:
+    ansible_host=168.11.111.111
+    ansible_port=22
+    ansible_connect=ssh
+
+win:
+  server2: 
+   ansible_host=168.11.111.111
+   ansible_port=5985
+   ansible_user=username
+   ansible_connection=username
+   #ansible_winrm_server_cert_validation=ignore
