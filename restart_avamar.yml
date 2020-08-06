@@ -1,0 +1,14 @@
+---
+- name: Avamar playbook
+  hosts: '{{ target }}'
+  become: yes
+
+  tasks:
+  - name: Status before stop
+    shell: service avagent status
+
+  - name: Start avamar
+    service: name= '{{ service_name }}' state=restarted
+
+  - name: Status after stop
+    shell: service avagent status

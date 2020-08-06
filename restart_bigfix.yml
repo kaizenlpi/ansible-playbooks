@@ -1,0 +1,16 @@
+---
+- name: Bigfix playbook
+  hosts: '{{ target }}' 
+  become: yes
+
+  tasks:    
+
+#Hard stop/force required
+  - name: stop besclient
+    service: name='{{ service_name }}' enabled=yes state=stopped
+
+  - name: Enable besclient
+    service: name=besclient enabled=yes
+
+  - name: Start besclient
+    service: name=besclient state=started

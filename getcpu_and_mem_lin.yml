@@ -1,8 +1,18 @@
 ---
- - name: get top 5 processes consuming cpu and memory
+ # may or may not need an if/then command dependent on the OS 
+ - name: get cpu count, load average, swap usage, and top 5 processes consuming cpu and memory
    hosts: all
 
    tasks:
+    - name: get cpu count
+      shell: cat /proc/cpuinfo
+     
+    - name: get load average
+      shell: w
+    
+    - name: get swap usage
+      shell: cat /proc/swaps
+
     - name: get top 5 processes consuming cpu
       ignore_errors: yes
       shell: ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | head -n 6
@@ -10,3 +20,6 @@
     - name: get top 5 processes consuming mem
       ignore_errors: yes
       shell: ps -eo pid,ppid,cmd,%mem --sort=-%mem | head -n 6
+
+
+
