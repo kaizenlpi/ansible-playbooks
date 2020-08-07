@@ -2,6 +2,7 @@
 - name: Bigfix playbook
   hosts: '{{ target }}' 
   become: yes
+  gather_facts: no
 
   tasks:    
 

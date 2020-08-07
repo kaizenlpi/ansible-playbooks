@@ -1,11 +1,25 @@
 ---
-- name: Connect to server and restart snmpd
-  hosts: '{{ target}}' 
+- name: Linux snmpd steps
+  hosts: '{{ target }}' 
   become: yes
+  become_method: sudo
+  gather_facts: no
 
   tasks: 
-  - name: Enable the Linux service
+ 
+  - name: Status before stop 
+    #shell: service snmpd status
+     command: service snmpd status
+     
+  - name: Stop the service
+    service: name='{{ service_name }}' state=stopped  
+
+  - name: Enable the service
     service: name='{{ service_name }}' enabled=yes
 
-  - name: Start the Linux service 
+  - name: Start the service
     service: name='{{ service_name }}' state=started
+ 
+  - name: Status after started
+    #shell: service snmpd status
+    command: service snmpd status
