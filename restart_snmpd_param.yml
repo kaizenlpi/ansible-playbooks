@@ -20,5 +20,4 @@
     service: name='{{ service_name }}' state=started
  
   - name: Status after started
-    #shell: service snmpd status
     command: service snmpd status
