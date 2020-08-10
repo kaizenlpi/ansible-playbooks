@@ -1,11 +1,11 @@
 ---
  # may or may not need an if/then command dependent on the OS 
  - name: get cpu count, load average, swap usage, and top 5 processes consuming cpu and memory
-   hosts: all
+   hosts: '{{ target }}'
 
    tasks:
     - name: get cpu count
-      shell: cat /proc/cpuinfo
+      shell: lscpu | egrep 'Model name|Socket|Thread|NUMA|CPU\(s\)'
      
     - name: get load average
       shell: w
