@@ -5,13 +5,18 @@
   gather_facts: no
 
   tasks:    
+  
+  - name: Status before stop 
+    command: service besclient status
 
-#Hard stop/force required
-  - name: stop besclient
-    service: name='{{ service_name }}' enabled=yes state=stopped
+  - name: Stop besclient
+    command: service besclient stop
 
   - name: Enable besclient
     service: name=besclient enabled=yes
 
   - name: Start besclient
-    service: name=besclient state=started
+    command: service besclient start
+
+  - name: Status after start 
+    command: service besclient status 
