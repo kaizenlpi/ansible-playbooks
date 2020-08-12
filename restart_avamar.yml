@@ -10,6 +10,7 @@
 
   - name: Start avamar
     service: name= '{{ service_name }}' state=restarted
+    # note: service doesn't give you any stdout and stderror. I needed that to provide to developers. Use command module instead. 
 
   - name: Status after start
     command: service avagent status
