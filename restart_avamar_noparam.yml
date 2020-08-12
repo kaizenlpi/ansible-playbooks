@@ -1,0 +1,22 @@
+---
+- name: Avamar playbook
+  hosts: '{{ target }}'
+  become: yes
+  #become_method: sudo
+  gather_facts: no
+
+  tasks:
+ 
+  - name: Status before stop
+    command: service avagent status
+  
+  - name: Enable avamar
+    service: name=avagent enabled=yes
+
+  - name: Restart avamar
+    command: service avagent restart
+    #service: name=avagent state=restarted enabled=yes
+    #shell: service avagent restart
+
+  - name: Status after start
+    command: service avagent status
