@@ -15,8 +15,6 @@
 
   - name: Restart avamar
     command: service avagent restart
-    #service: name=avagent state=restarted enabled=yes
-    #shell: service avagent restart
-
+ 
   - name: Status after start
     command: service avagent status
