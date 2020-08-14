@@ -1,0 +1,20 @@
+---
+- name: Get vm directory path
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python3"
+
+  tasks: 
+    - set_fact:
+        vm_name: myvmname
+
+    - name: "Find folder for VM - {{ vm_name }}"
+      vmware_guest_find: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+      delegate_to: localhost
+      register: vm_facts 
