@@ -1,5 +1,5 @@
 ---
-- name: get folder path and modify cpu of vm
+- name: get folder path and modify memory of vm
   hosts: localhost
   gather_facts: false
   vars: 
@@ -7,8 +7,8 @@
 
   tasks: 
     - set_fact: #set variable
-        vm_name:  "{{ target_name }}"
-        change_cpus: "{{ cpus }}"
+        vm_name: "{{ target_name }}"
+        change_memory: "{{ memory }}"
 
     - name: "Find folder for VM - {{ vm_name }}"
       vmware_guest_find: 
@@ -17,9 +17,9 @@
         password: "{{ vcenter_password }}"
         validate_certs: no
         name: "{{ vm_name }}"
-      register: vm_facts 
+      register: vm_facts
       delegate_to: localhost
- 
+
     - name: Stop virtual machine
       vmware_guest:
         hostname: "{{ vcenter_hostname }}"
@@ -31,8 +31,9 @@
         state: "poweredoff"
       register: stop_vm
       delegate_to: "localhost"
+      
 
-    - name: modify CPUs
+    - name: modify memory
       vmware_guest:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
@@ -42,10 +43,11 @@
         name: "{{ vm_name }}"
         state: "present"
         hardware: 
-          num_cpus: "{{ cpus }}"
+          memory_mb: "{{ memory }}"
           scsi: paravirtual
-      register: modify_cpus
+      register: modify_memory
       delegate_to: "localhost"
+      
     
     - name: Power on virtual machine
       vmware_guest:
@@ -57,10 +59,11 @@
         name: "{{ vm_name }}"
         state: "poweredon"
         hardware: 
-          num_cpus: "{{ cpus }}"
+          memory_mb: "{{ memory }}"
           scsi: paravirtual
       register: start_vm
       delegate_to: "localhost"
+
         
         
   
