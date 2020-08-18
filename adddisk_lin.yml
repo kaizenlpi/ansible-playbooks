@@ -1,0 +1,41 @@
+---
+- name: get folder path and add disk of vm
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python3"
+
+  tasks: 
+    - set_fact: #set variable
+        vm_name: "{{ target_name }}"
+        #change_disk: "{{ disk }}"
+
+    - name: "Find folder for VM - {{ vm_name }}"
+      vmware_guest_find: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+      register: vm_facts
+      delegate_to: localhost
+   
+    - name: add disks to vm 
+      vmware_guest_disk:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}" 
+        datacenter: "ADC"
+        validate_certs: no
+        folder: '{{ vm_facts }}'
+        name: "{{ vm_name }}"
+        disk: 
+          - size_gb: "{{ storage_size }}"
+            type: thick
+            datastore: yourdatastore
+            state: "present"
+            scsi_controller: 2
+            unit_number: 2
+            scsi_type: "paravirtual"
+      delegate_to: "localhost"
+      register: add_disk
