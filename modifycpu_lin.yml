@@ -1,0 +1,64 @@
+---
+- name: get folder path and modify cpu of vm
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    ansible_python_interpreter: "/usr/bin/python3"
+
+  tasks: 
+    - set_fact: #set variable
+        vm_name:  "{{ target_name }}"
+        #change_cpus: 2
+        change_cpus: "{{ cpus }}"
+
+    - name: "Find folder for VM - {{ vm_name }}"
+      vmware_guest_find: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+      delegate_to: localhost
+      register: vm_facts 
+ 
+    - name: Stop virtual machine
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        folder: "{{ vm_facts }}"   
+        name: "{{ vm_name }}"
+        state: "poweredoff"
+      delegate_to: "localhost"
+      register: stop_vm
+
+    - name: modify CPUs
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}" 
+        validate_certs: no
+        folder: '{{ vm_facts }}'
+        name: "{{ vm_name }}"
+        state: "present"
+        hardware: 
+          num_cpus: "{{ cpus }}"
+          scsi: paravirtual
+      register: modify_cpus
+    
+    - name: Power on virtual machine
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}" 
+        validate_certs: no
+        folder: '{{ vm_facts }}'
+        name: "{{ vm_name }}"
+        state: "poweredon"
+        hardware: 
+          num_cpus: "{{ cpus }}"
+          scsi: paravirtual
+        
+        
+  
