@@ -1,0 +1,6 @@
+---
+
+
+vcenter_hostname: "{{ vault_vcenter_hostname }}"
+vcenter_username: "{{ vault_vcenter_username }}"
+vcenter_password: "{{ vault_vcenter_password }}"
