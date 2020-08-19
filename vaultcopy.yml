@@ -1,5 +1,0 @@
----
-vcenter_hostname: "your vcenter hostname"
-vcenter_username: "your vcenter username without domain\\"
-vcenter_password: "your vcenter password"
-
