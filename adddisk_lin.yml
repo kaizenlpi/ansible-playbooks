@@ -12,7 +12,7 @@
     - set_fact: #set variable
         vm_name: "{{ target_name }}"
         
-    - name: "Find folder for VM - {{ vm_name }}"
+    - name: "Find folder for VM - {{ vm_name }}" # I need this because I will not know the virtual machine's folder in vmware beforehand. 
       vmware_guest_find: 
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
