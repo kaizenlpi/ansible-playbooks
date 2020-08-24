@@ -1,15 +1,17 @@
 ---
-- name: get folder path and add disk of vm
+- name: get folder path of vm, get disk info and backing datastore in vmware,  and add disk for vm
   hosts: localhost
   gather_facts: false
   vars: 
-    ansible_python_interpreter: "/usr/bin/python3"
+    - ansible_python_interpreter: "/usr/bin/python3"
+  vars_files:
+    - /home/uipath01/vars/main.yml
+    - /home/uipath01/vars/vault.yml
 
   tasks: 
     - set_fact: #set variable
         vm_name: "{{ target_name }}"
-        #change_disk: "{{ disk }}"
-
+        
     - name: "Find folder for VM - {{ vm_name }}"
       vmware_guest_find: 
         hostname: "{{ vcenter_hostname }}"
@@ -19,23 +21,43 @@
         name: "{{ vm_name }}"
       register: vm_facts
       delegate_to: localhost
-   
+
+    - name: get disk info
+      vmware_guest_disk_info: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ dc }}"
+        name: "{{ vm_name }}"
+      register: diskinfo
+      delegate_to: localhost
+
+    - name: Get Backing datastore for desired disk id
+      set_fact:
+        disk_zero_datastore: "{{ item.value.backing_datastore }}"
+      with_dict: "{{diskinfo.guest_disk_info }}"
+      when: item.key == '0'
+    - debug:
+        msg: "{{ disk_zero_datastore }}"
+      when: disk_zero_datastore is defined
+
     - name: add disks to vm 
       vmware_guest_disk:
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}" 
-        datacenter: "ADC"
+        datacenter: "{{ dc }}"
         validate_certs: no
         folder: '{{ vm_facts }}'
         name: "{{ vm_name }}"
         disk: 
           - size_gb: "{{ storage_size }}"
             type: thick
-            datastore: yourdatastore
+            datastore: "{{ disk_zero_datastore}}"
             state: "present"
-            scsi_controller: 2
-            unit_number: 2
+            scsi_controller: 1 
+            unit_number: 1 
             scsi_type: "paravirtual"
       delegate_to: "localhost"
       register: add_disk
