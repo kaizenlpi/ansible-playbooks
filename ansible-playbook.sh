@@ -1,11 +1,11 @@
-# a shell wrapper to make ansible create a log file with the playbook name and date/time.
+# a shell wrapper to make ansible create a log file with the playbook name and date/time each time a playbook is run.
 
 #!/bin/bash 
 export ANSIBLE_LOG_PATH=/home/myusername/log/$(echo $1 | cut -d . -f 1 && date "+%Y-%m-%d").log 
 ansible-playbook $@ 
 
-
-# Note: In my .bashrc, I added:
+# Setup Notes:
+# In my .bashrc, I added:
 # alias ansible-playbook="/home/myusername/ansible-playbook-wrapper.sh"
 # Source this file
 
