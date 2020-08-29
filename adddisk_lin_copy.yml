@@ -1,4 +1,5 @@
 ---
+# this playbook finds the existing disks, then incrementally adds the next hard disk to the next available scsi controller number. 
 - name: get folder path of vm, get disk info and backing datastore in vmware,  and add disk for vm
   hosts: localhost
   gather_facts: false
