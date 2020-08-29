@@ -1,0 +1,50 @@
+---
+- name: get folder path and add disk of vm
+  hosts: localhost
+  gather_facts: false
+  
+  vars: 
+    - ansible_python_interpreter: "/usr/bin/python3"
+    #- query: "json[?name=='{{ disk_info.0 }}'].backing_datastore"
+
+  vars_files:
+    - /home/uipath01/vars/main.yml
+    - /home/uipath01/vars/vault.yml
+      
+  tasks:
+
+    - set_fact:
+        vm_name: "{{ target_name }}"
+            
+       # hosts: "{{ hosts | json_query(query) | first }}"
+
+    - name: "Find folder for VM - {{ vm_name }}"
+      vmware_guest_find: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ vm_name }}"
+      register: vm_facts
+      delegate_to: localhost
+
+    - name: get disk info
+      vmware_guest_disk_info: 
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ dc }}"
+        name: "{{ vm_name }}"
+      register: diskinfo
+      delegate_to: localhost
+
+    - name: Get Backing datastore for desired disk id
+      set_fact:
+        disk_zero_datastore: "{{ item.value.backing_datastore }}"
+      with_dict: "{{diskinfo.guest_disk_info }}"
+      when: item.key == '0'
+
+    - debug:
+        msg: "{{ disk_zero_datastore }}"
+      when: disk_zero_datastore is defined

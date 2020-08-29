@@ -1,0 +1,59 @@
+---
+- name: get folder path of vm, get disk info and backing datastore in vmware,  and add disk for vm
+  hosts: localhost
+  gather_facts: false
+  vars: 
+    - ansible_python_interpreter: "/usr/bin/python3"
+  vars_files:
+    - /home/uipath01/vars/vault_txcloud_adc.yml
+    #- /home/uipath01/vars/vault_txcloud_sdc.yml
+    #- /home/uipath01/vars/vault_txdcs_bigintel_adc.yml
+    #- /home/uipath01/vars/vault_txdcs_bigintel_sdc.yml
+    #- /home/uipath01/vars/vault_txdcs_vspherelegacy_adc.yml
+    #- /home/uipath01/vars/vault_txdcs_vspherelegacy_sdc.yml
+    #- /home/uipath01/vars/vault_txdcs_bigintel_sdc.yml
+    #- /home/uipath01/vars/vault_txdcs_bigintel_adc.yml
+
+  tasks:      
+
+  - set_fact:
+      vm_name: "{{ target_name }}"  
+  
+  - name: "Find folder for VM - {{ vm_name }}"
+    vmware_guest_find: 
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: no
+      name: "{{ vm_name }}"
+    register: vm_facts
+    delegate_to: localhost
+
+  
+  - name: Get all disks in all controllers
+    vmware_guest_disk_info:
+      validate_certs: False
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      datacenter: '{{ dc }}'
+      name: "{{ vm_name }}"
+    register: existing_disk
+    delegate_to: localhost
+
+  - name: Create a dict with controller and the total number of disks
+    set_fact:
+      disk_info: "{{ disk_info | default({}) | combine({ item.value.controller_bus_number : item.value.unit_number} )}}"
+    with_dict: "{{ existing_disk.guest_disk_info }}"
+
+  - debug:
+      msg: "{{ disk_info }}"
+
+   - name: Get Backing datastore for desired disk id
+      set_fact:
+        disk_zero_datastore: "{{ item.value.backing_datastore }}"
+      with_dict: "{{diskinfo.guest_disk_info }}"
+      when: item.key == '0'
+    - debug:
+        msg: "{{ disk_zero_datastore }}"
+      when: disk_zero_datastore is defined

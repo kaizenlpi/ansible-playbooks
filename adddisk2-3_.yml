@@ -70,12 +70,13 @@
         msg: "{{scsicontrollernumber}}"
       when: scsicontrollernumber is defined
 
-    - name: Skip SCSI controller No 7
-      set_fact:
-       unitNumber: "{{unitNumber | int+1 }}"
-      when: unitNumber == "7"
+    #- name: Skip SCSI controller No 7
+     
+    #  set_fact:
+     #   unitNumber: "{{unitNumber | int+1 }}"
+     # when: unitNumber == "7"
       
-# If hard disk 1 exists at scsi controller unit_number 0:0, add another disk. I had hard disk 1 and hard disk 2 existing, this added a third disk.
+# If hard disk 1 exists at scsi controller unit_number 0:0, add another disk 
     - name: add disks to vm 
       vmware_guest_disk:
         hostname: "{{ vcenter_hostname }}"
@@ -90,8 +91,31 @@
             type: thick
             datastore: "{{ disk_zero_datastore}}"
             state: "present"
-            scsi_controller: "{{ scsicontrollernumber[0:4] }}"  
+            scsi_controller: "{{ scsicontrollernumber }}"  
             unit_number: "{{ controllerKey[0:1]}}" 
+            scsi_type: "paravirtual"
+      delegate_to: "localhost"
+      register: add_disk
+
+# If hard disk 2 exists at scsi controller unit_number 0:1, add another 3rd disk. 
+# If there is only 1 existing disk at unit 0, this playbook will add 2 more hard disks 2 and 3. Therefore you'd be adding 2 disks to this playbook. 
+# only 15 4 scsi controllers per vm
+    - name: add disks to vm 
+      vmware_guest_disk:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}" 
+        datacenter: "{{ dc }}"
+        validate_certs: no
+        folder: '{{ vm_facts }}'
+        name: "{{ vm_name }}"
+        disk: 
+          - size_gb: "{{ storage_size }}"
+            type: thick
+            datastore: "{{ disk_zero_datastore}}"
+            state: "present"
+            scsi_controller: "{{ scsicontrollernumber }}"  
+            unit_number: "{{ controllerKey[0:2]}}" 
             scsi_type: "paravirtual"
       delegate_to: "localhost"
       register: add_disk

@@ -1,0 +1,45 @@
+---
+#Notes 8/12/20 
+# 1) Engineer removed vm_name, vm_cluster, vm_folder
+# 2) Used vm_ware_info with folder module and direct path. 
+# 3) used forcebasic_auth: yes
+# 4) used validate_certs: no
+
+
+- name: Gather all registered virtual machines
+  hosts: all
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python3"
+
+  tasks:
+    - name: Login into vCenter and get cookies
+      uri:
+        url: https://{{ vcenter_hostname }}/rest/com/vmware/cis/session
+        force_basic_auth: yes
+        validate_certs: no
+        method: POST
+        user: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+      register: login
+
+    - name: Get all hosts from vCenter using cookies from last task
+      uri:
+        url: https://{{ vcenter_hostname }}/rest/vcenter/host
+        force_basic_auth: yes
+        validate_certs: no
+        headers:
+          Cookie: "{{ login.set_cookie }}"
+      register: vchosts
+
+    - name: Gather all registered virtual machines
+      vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: no
+        vm_type: vm
+        folder: "/ADC/" 
+      register: vmsall
+  
+
+      

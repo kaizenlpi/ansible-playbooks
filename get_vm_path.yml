@@ -2,12 +2,15 @@
 - name: Get vm directory path
   hosts: localhost
   gather_facts: false
-  vars: 
-    ansible_python_interpreter: "/usr/bin/python3"
+  #vars: 
+    #ansible_python_interpreter: "/usr/bin/python3"
+  vars_files: 
+    - /home/uipath01/vars/vault.yml
+    - /home/uipath01/vars/main.yml
 
   tasks: 
     - set_fact:
-        vm_name: myvmname
+        vm_name: "{{ target_name }}"
 
     - name: "Find folder for VM - {{ vm_name }}"
       vmware_guest_find: 
