@@ -1,0 +1,11 @@
+---
+# This playbook downloads via git the repository containing the rpm needed to install Crowdstrike sensor. 
+- hosts: localhost
+  tasks:
+  - name: download package from git
+    command: git clone git@gitlab.mytestgitlabdomain.com:root/devops.git
+
+  - name: Install falcon software
+    yum:
+      name: /home/admin/ansible/devops/Crowdstrike/RHEL_CentOS_Oracle_8/falcon-sensor-6.16.0-11308.el8.x86_64.rpm
+      state: installed
