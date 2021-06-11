@@ -1,0 +1,29 @@
+---
+- name: Make a POST connection verify connection succeeds. Will return unique token number. 
+  hosts: localhost
+  gather_facts: no
+  
+  #Set as variables
+  #hostname
+  #ip 
+
+  #cmdbID
+  #remedyID
+
+  tasks:
+
+  - name: Check that you can POST to login to API server
+    uri: 
+      url: http://204.67.120.25:80/api/v2/authentication/signin?nmsLogin=false
+      method: POST
+      status_code: 200
+      body: { name: "admin", password: "mypassword!"}
+      body_format: json
+      validate_certs: no   
+    register: login
+  - debug: var=login 
+  
+  # need subkey of .json and .token for the subkey of the token printed to stdout upon playbook execution to set the variable. 
+  - name: set fact - muleLogin
+    set_fact: 
+      muleLogin: "{{ login.json.token }}"
