@@ -27,3 +27,15 @@
   - name: set fact - muleLogin
     set_fact: 
       muleLogin: "{{ login.json.token }}"
+
+# using the token set as muleLogin below, this task returns a list of servers and IP addresses. 
+- name: Get list of matched devices based on IP and hostname
+    uri: 
+      url: http://204.67.120.25:80/api/v2/devices/filter
+      method: POST
+      status_code: 200
+      headers: 
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+      body: { name: "Var", ipAddress: "Var", }
+      body_format: json
