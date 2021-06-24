@@ -1,0 +1,318 @@
+---
+# Make an API call to grab a group of device groups, search for a specific groupname, and add a new device to Sevone using mulesoft credentials. 
+# We are sending in a new device when we make the API call by enumerating by 1 to the host name and fqdn. 
+# API call example:  ansible-playbook build1.yml --extra-vars "hostname=server06242 ipaddress=204.1.1.1 cmdbid=testing vdclocation=ADC tier=Premier os=Windows fqdn=server06242.local submission=Internal agency=AGENCYA" 
+
+
+- name: Make a POST connection verify connection succeeds.
+  hosts: localhost
+  gather_facts: no
+  vars:
+    - hostname: hostname
+    - ipaddress: ipaddress
+    - cmdbid: cmdbid
+    - vdclocation: vdclocation
+    - tier: tier
+    - os: os
+    - fqdn: fqdn
+    - submission: submission
+    - agency: agency
+
+  tasks:
+
+  - name: Check that you can POST to login to API server
+    uri:
+      url: http://204.1.1.1:80/api/v2/authentication/signin?nmsLogin=false
+      method: POST
+      body: { name: "admin", password: "supersecret!"}
+      body_format: json
+      validate_certs: no
+    register: login
+  - debug: var=login
+
+  - name: set fact - muleLogin
+    set_fact:
+      muleLogin: "{{ login.json.token }}"
+
+  - name: Get list of peers
+    uri:
+      url: http://204.1.1.1:80/api/v2/peers
+      method: GET
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+    register: peersList
+  - debug: var=peersList
+
+  - name: grab list of filtered peers
+    set_fact:
+      peers: "{{ peersList.json.content |  selectattr('name','contains', vdclocation ) | rejectattr('model','equalto','DNC' ) | rejectattr('name','equalto','NSOSDCS600-TXD') | rejectattr('name','equalto','NSOADCS600-TXD' ) | list }}"
+  - debug: var=peers
+
+  - name: loop through peers list to get the serverLoad
+    set_fact:
+      peersServerLoad: "{{ peers | map(attribute='serverLoad') |  list }}"
+  - debug: var=peersServerLoad
+
+  - name: loop through peers list to get the flowLoad
+    set_fact:
+      peersFlowLoad: "{{ peers | map(attribute='flowLoad') |  list }}"
+  - debug: var=peersFlowLoad
+
+  - name: Initiate peers top List array
+    set_fact:
+      combinedvalues: []
+
+  - name: Add new JSON Objects to List
+    set_fact:
+      combinedvalues: "{{ combinedvalues + [{ 'total': (item.serverLoad + item.flowLoad), 'capacity': item.capacity, 'id': item.serverId }] }}"
+    loop: "{{ peers }}"
+
+  - name: Initiate peers into an array
+    set_fact:
+      utilization: []
+
+  - name: Add new JSON Objects List array
+    set_fact:
+      utilization: "{{ utilization + [{ 'total': (item.total / item.capacity), 'id': item.id }] }}"
+    loop: "{{ combinedvalues }}"
+  - debug: var=utilization
+
+  - name: filter to lowest utilized
+    set_fact:
+      lowestUtilized: "{{ (utilization | sort(attribute='total'))[0]['id'] }}"
+
+  - name: Create new device
+    uri:
+      url: http://204.1.1.1:80/api/v2/devices
+      method: POST
+      status_code: 201
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+      body: {
+        name: "{{ fqdn }}",
+        alternateName:  "{{ cmdbid }}",
+        ipAddress: "{{ ipaddress }}",
+        peerId: "{{ lowestUtilized }}"
+        }
+      body_format: json
+    register: device
+  
+  - name: set fact - deviceid
+    set_fact:
+      deviceid: "{{ device.json.id }}"
+
+
+# figure out if ADC do the relavant group name, if not, send to SDC
+# list of groups to add to
+  # agency
+  # value="Data Center-San Angelo (SDC)"
+  # value="Data Center-Austin (ADC)"
+  # value="TPC {{serviceTier}} - Being Assembled"
+  # value="TPC {{serviceTier}}"
+  # value="TPC {{serviceTier}} Windows"
+  # value="TPC {{serviceTier}} Linux"
+
+  - name: Get group
+    uri:
+      url: http://204.67.120.25:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+      body: { name: "{{ agency}}", pageSize: 1000 }
+      body_format: json
+    register: groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', agency ) | list }}"
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+  - debug: var=groupid
+
+  - name: Add to group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+  - debug: var=groupsAddResult
+
+  - name: set DC for ADC
+    set_fact:
+      groupName: "Data Center-Austin (ADC)"
+    when: vdclocation == 'ADC'
+  # - debug: var='vdclocation'
+
+  - name: set DC for SDC
+    set_fact:
+      groupName: "Data Center-San Angelo (SDC)"
+    when: vdclocation == 'SDC'
+  # - debug: var=groupName
+
+  - name: Get group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+      body: {
+        name: "{{ groupName }}",
+        pageSize: 1000
+        }
+      body_format: json
+    register: groupsJson
+  # - debug: var=groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', groupName ) | list }}"
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+  - debug: var=groupid
+
+  - name: Add to group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+  - debug: var=groupsAddResult
+
+
+  - name: set os group name windows
+    set_fact:
+      groupName: "TPC {{ tier }} Windows"
+    when: os == 'Windows'
+
+  - name: set os group name linux
+    set_fact:
+      groupName: "TPC {{ tier }} Linux"
+    when: os != 'Windows'
+
+  #will be used for all group gets
+  - name: Get group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+      body: {
+      name: "{{ groupName }}",
+      pageSize: 1000
+        }
+      body_format: json
+    register: groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', groupName ) | list }}"
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+  - debug: var=groupid
+
+  - name: Add to group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+  - debug: var=groupsAddResult
+
+
+  - name: This is being assembled.
+    set_fact:
+      groupName: "TPC {{tier}} - Being Assembled"
+    when: submission == 'Internal'
+
+  - name: This is not being assembled.
+    set_fact:
+      groupName: "TPC {{tier}}"
+    when: submission == 'source system'
+
+      #will be used for all group gets
+  - name: Get group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+      body: {
+        name: "{{ groupName }}",
+        pageSize: 1000
+          }
+      body_format: json
+    register: groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', groupName ) | list }}"
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+  - debug: var=groupid
+
+  
+  - name: Add to group
+    uri:
+      url: http://204.1.1.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ muleLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+  - debug: var=groupsAddResult
+
+# end of group get
+
+
+# figure out if ADC do the relavant group name, if not, send to SDC
+# list of groups to add to
+  # value="Data Center-San Angelo (SDC)"
+  # value="Data Center-Austin (ADC)"
+  # value="TPC {{serviceTier}} - Being Assembled"
+  # value="TPC {{serviceTier}}"
+  # value="TPC {{serviceTier}} Windows"
+  # value="TPC {{serviceTier}} Linux"
