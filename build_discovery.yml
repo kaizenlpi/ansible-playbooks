@@ -1,0 +1,31 @@
+---
+- name: The purpose of this playbook is to send a ssh to the discovery, assigning the agency, date, time, ip address and scans dicovery for a new machine. Discovery scans servers to make sure things are ok. Discovery is hooked into the CMDB. 
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    - sshUser: myUser
+    - sshPwd: myPassword
+    - sshHost: 192.1.1.111
+    - sshPort: 22
+    - addmUsrname: addm_cmdline
+    - addmPwd: /usr/myUser/addm/addm_cmdline
+    - ipAddress: ip
+    - agency: agency
+
+  tasks:
+
+  - name: get the current date in format YYYYMMddHHmm
+    shell: date '+%Y%m%d%H%M'
+    register: currentDate
+  - debug: var=currentDate
+
+  - name: setting a var
+    set_fact: 
+      formattedDate: "{{ currentDate.stdout }}"
+  - debug: var=formattedDate
+
+    # Note: ssh pass is used for non-interactive authentication. The next arguments tell ssh not to use strict host key checking because you will get prompted to accept the host key prompt, which will break the play when using ansible tower!
+  - name: ssh into the host
+    shell: sshpass -p {{sshPwd}} ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {{sshUser}}@{{sshHost}} tw_scan_control --username={{addmUsrname}} --passwordfile={{addmPwd}} --label='mt_{{agency}}_{{formattedDate}}_{{ipAddress}}' --add {{ipAddress}} 
+      
