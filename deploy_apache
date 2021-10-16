@@ -1,0 +1,24 @@
+- name: Install Apache on RHEL Server
+  hosts: all
+  gather_facts: yes
+  become: yes 
+
+  tasks:
+
+  - name: set variable of webServer to apache
+    set_fact:
+      webServer: "{{ webServer }}" 
+
+  - name: end play if httpd is already installed. 
+    meta: end_play
+    when: webServer == "NA"
+
+  - name: Install package for All servers
+    yum: 
+      name: httpd 
+      state: installed
+    notify: restart httpd
+    
+  handlers:
+  - name: restart httpd
+    service: name=httpd state=restarted enabled=yes
