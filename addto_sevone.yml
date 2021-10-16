@@ -1,0 +1,358 @@
+--
+# Purpose: This playbook creates a post connection to login to an API server, lists out a list of server devices, then adds a new server to sevone. 
+
+- name: Make a POST connection verify connection succeeds.
+  hosts: all
+  gather_facts: no
+  vars:
+    #- hostname: hostname
+    #- ipAddress: ipaddress
+    #- cmdbid: cmdbid
+    #- vdclocation: vdclocation
+    ##- tier: tier
+    #- os: os
+    #- fqdn: fqdn
+    #- submission: submission
+    #- agency: agency
+
+# Purpose: The play must match one of the tiers, or it ends. The play
+
+  tasks:
+
+  - name: end play if nothing to upgrade
+    meta: end_play
+    when: tier == "Semi-Managed"
+
+  - name: Check that you can POST to login to API server
+    uri:
+      url: http://204.1.120.1:80/api/v2/authentication/signin?nmsLogin=false
+      method: POST
+      body: { name: "myUserName", password: "myPassword"}
+      body_format: json
+      validate_certs: no  
+    register: login
+    delegate_to: localhost 
+  - debug: var=login
+
+  - name: set fact - someLogin
+    set_fact:
+      someLogin: "{{ login.json.token }}"
+
+  - name: Get list of peers
+    uri:
+      url: http://204.1.120.1:80/api/v2/peers
+      method: GET
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+    register: peersList
+    delegate_to: localhost
+  #- debug: var=peersList
+    
+    
+  - name: print the vdc location
+    debug: 
+      msg: "{{vdclocation}}"
+    delegate_to: localhost
+
+  - name: print the vdc location
+    debug: 
+      msg: "{{hostname}}"
+    delegate_to: localhost
+
+
+  - name: grab list of filtered peers
+    set_fact:
+      peers: "{{ peersList.json.content |  selectattr('name','contains', vdclocation ) | rejectattr('model','equalto','DNC' ) | rejectattr('name','equalto','NSOSDCS600-TXD') | rejectattr('name','equalto','NSOADCS600-TXD' ) | list }}"
+    delegate_to: localhost  
+  - debug: var=peers
+
+  - name: loop through peers list to get the serverLoad
+    set_fact:
+      peersServerLoad: "{{ peers | map(attribute='serverLoad') |  list }}"
+    delegate_to: localhost
+  - debug: var=peersServerLoad
+
+  - name: loop through peers list to get the flowLoad
+    set_fact:
+      peersFlowLoad: "{{ peers | map(attribute='flowLoad') |  list }}"
+    delegate_to: localhost
+  - debug: var=peersFlowLoad
+
+  - name: Initiate peers top List array
+    set_fact:
+      combinedvalues: []
+    delegate_to: localhost
+
+  - name: Add new JSON Objects to List
+    set_fact:
+      combinedvalues: "{{ combinedvalues + [{ 'total': (item.serverLoad + item.flowLoad), 'capacity': item.capacity, 'id': item.serverId }] }}"
+    loop: "{{ peers }}"
+    delegate_to: localhost
+  - debug: var=combinedvalues
+
+  - name: Initiate peers into an array
+    set_fact:
+      utilization: []
+    delegate_to: localhost  
+
+  - name: Add new JSON Objects List array
+    set_fact:
+      utilization: "{{ utilization + [{ 'total': (item.total / item.capacity), 'id': item.id }] }}"
+    loop: "{{ combinedvalues }}"
+    delegate_to: localhost
+  - debug: var=utilization
+
+  - name: filter to lowest utilized
+    set_fact:
+      lowestUtilized: "{{ (utilization | sort(attribute='total'))[0]['id'] }}"
+    delegate_to: localhost
+  - debug: var=lowestUtilized
+
+  - name: Create new device
+    uri:
+      url: http://204.1.120.1:80/api/v2/devices
+      method: POST
+      status_code: 201
+      headers:
+        X-AUTH-TOKEN: "{{ sometLogin }}"
+      validate_certs: no
+      body: {
+        name: "{{ fqdn }}",
+        alternateName:  "{{ cmdbid }}",
+        ipAddress: "{{ ipAddress }}",
+        peerId: "{{ lowestUtilized }}"
+        }
+      body_format: json
+    delegate_to: localhost
+    register: device
+  
+  - name: set fact - deviceid
+    set_fact:
+      deviceid: "{{ device.json.id }}"
+    delegate_to: localhost  
+
+  - name: Get group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+      body: { name: "{{ agency}}", pageSize: 1000 }
+      body_format: json
+    delegate_to: localhost
+    register: groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+    delegate_to: localhost
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', agency ) | list }}"
+    delegate_to: localhost
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+    delegate_to: localhost
+  - debug: var=groupid
+
+  - name: Add to group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+    delegate_to: localhost  
+    register: groupsAddResult
+  - debug: var=groupsAddResult
+
+  - name: set DC for ADC
+    set_fact:
+      groupName: "Data Center-A)"
+    when: vdclocation == 'DCA'
+    delegate_to: localhost
+  # - debug: var='vdclocation'
+
+  - name: set DC for SDC
+    set_fact:
+      groupName: "Data Center-B"
+    when: vdclocation == 'DCB'
+    delegate_to: localhost
+  # - debug: var=groupName
+
+  - name: Get group
+    uri:
+      url: http://204.67.120.25:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+      body: {
+        name: "{{ groupName }}",
+        pageSize: 1000
+        }
+      body_format: json
+    register: groupsJson
+    delegate_to: localhost
+  # - debug: var=groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+    delegate_to: localhost
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', groupName ) | list }}"
+    delegate_to: localhost  
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+    delegate_to: localhost
+  - debug: var=groupid
+
+  - name: Add to group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+    delegate_to: localhost
+  - debug: var=groupsAddResult
+
+
+  - name: set os group name windows
+    set_fact:
+      groupName: "TPC {{ tier }} Windows"
+    when: os == 'Windows' and submission == 'source system'
+    delegate_to: localhost
+  - debug: var=groupname
+
+  - name: set os group name linux
+    set_fact:
+      groupName: "TPC {{ tier }} Linux"
+    when: os != 'Windows' and submission == 'source system'
+    delegate_to: localhost
+
+  #will be used for all group gets
+  - name: Get group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+      body: {
+      name: "{{ groupName }}",
+      pageSize: 1000
+        }
+      body_format: json
+    delegate_to: localhost
+    register: groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+    delegate_to: localhost  
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', groupName ) | list }}"
+    delegate_to: localhost
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+    delegate_to: localhost
+  - debug: var=groupid
+
+  - name: Add to group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+    delegate_to: localhost
+  - debug: var=groupsAddResult
+
+
+  - name: This is being assembled.
+    set_fact:
+      groupName: "TPC {{tier}} - Being Assembled"
+    when: submission == 'Internal'
+    delegate_to: localhost
+
+  - name: This is not being assembled.
+    set_fact:
+      groupName: "TPC {{tier}}"
+    when: submission == 'source system'
+    delegate_to: localhost
+
+      #will be used for all group gets
+  - name: Get group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/filter?size=1000
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+      body: {
+        name: "{{ groupName }}",
+        pageSize: 1000
+          }
+      body_format: json
+    delegate_to: localhost
+    register: groupsJson
+
+  - name: set fact - groupsJsonContent
+    set_fact:
+      groupList: "{{ groupsJson.json.content }}"
+    delegate_to: localhost
+  # - debug: var=groupList
+
+  - name: Grab name in the content array through list of groups
+    set_fact:
+      ParsedList: "{{ groupList | selectattr('name','equalto', groupName ) | list }}"
+    delegate_to: localhost
+  # - debug: var=ParsedList
+
+  - name: set fact - groupid
+    set_fact:
+      groupid: "{{ ParsedList[0].id }}"
+    delegate_to: localhost
+  - debug: var=groupid
+
+  # Add new server to SevOne
+  - name: Add to group
+    uri:
+      url: http://204.1.120.1:80/api/v2/devicegroups/{{ groupid }}/members/{{ deviceid }}
+      method: POST
+      headers:
+        X-AUTH-TOKEN: "{{ someLogin }}"
+      validate_certs: no
+    register: groupsAddResult
+    delegate_to: localhost
+  - debug: var=groupsAddResult
+
+# end of group get
+
+
+
+
+
