@@ -1,4 +1,5 @@
 ---
+#Notes: you must install the makepasswd and mkpasswd packages for this playbook to work! They are not part of the rhel7/8 packages. 
 - hosts: all
   become: yes
   become_method: sudo
