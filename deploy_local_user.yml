@@ -1,0 +1,31 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  connection: ssh
+  
+  tasks:
+   - name: Add group "sotaadmin" to remote server
+     group:
+       name: sotaadmin
+       gid: 38000
+       state: present
+
+   # add a new input for VRA 8 blueprint. Input should be agencyUser:txdcs. "user" appends to the passed agency variable value. 
+   - name: Add agency user to remote server
+     user:
+       name: "{{ agencyUser }}user" 
+       comment:  897/C//"{{ agencyUser }}"/Agency Admin 
+       uid: 38001
+       group: sotaadmin
+       append: yes
+       shell: /bin/bash
+       createhome: yes
+       password: Temporary123! | password_hash('sha512')
+       expires: 1525198731
+     register: local_user
+  
+   - name: Force user agency_user to change the password
+     command: 
+       chage -d 0 local_user
