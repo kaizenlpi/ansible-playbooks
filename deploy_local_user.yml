@@ -1,32 +1,46 @@
 ---
-#Notes: you must install the makepasswd and mkpasswd packages for this playbook to work! They are not part of the rhel7/8 packages. 
 - hosts: all
   become: yes
   become_method: sudo
   gather_facts: no
   connection: ssh
+  # Pre-requisites note: 
+  # On golden images for rhel7/rhel8 yum install python2-pip and yum install python3-pip. Did this for future proofing. 
+  # No need to use makepasswd package or expect package via yum. Passwd automatically hashes password and adds to /etc/shadow.
   
   tasks:
+  
+   - name: Install pexpect through pip
+     become: true
+     pip:
+       name: "pexpect>=3.3"
+       state: present
+  
    - name: Add group "sotaadmin" to remote server
      group:
        name: sotaadmin
        gid: 38000
        state: present
 
-   # add a new input for VRA 8 blueprint. Input should be agencyUser:txdcs. "user" appends to the passed agency variable value. 
-   - name: Add agency user to remote server
+   # add agencyUser with VRA blueprint Inputs default value of txdcs for Ansible-ADC and Ansible-SDC. user appends to the passed agency variable value. 
+   - name: Create local agency user to remote server
      user:
-       name: "{{ agencyUser }}user" 
+       name: "{{ agencyUser }}user"
+       #password: "{{ encrypted_user_password.stdout }}"
+       update_password: always
+       state: present
        comment:  897/C//"{{ agencyUser }}"/Agency Admin 
        uid: 38001
        group: sotaadmin
        append: yes
        shell: /bin/bash
        createhome: yes
-       password: Temporary123! | password_hash('sha512')
-       expires: 1525198731
-     register: local_user
-  
-   - name: Force user agency_user to change the password
-     command: 
-       chage -d 0 local_user
+
+   - name: Set password for user
+     expect:
+       command: passwd "{{ agencyUser }}user"
+       responses:
+         (?i)password: "MySekretPa$$word"  
+ 
+   - name: Force user to change password
+     shell: chage -d 0 {{ agencyUser }}user
