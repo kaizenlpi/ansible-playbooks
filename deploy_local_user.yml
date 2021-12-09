@@ -5,11 +5,13 @@
   gather_facts: no
   connection: ssh
   # Pre-requisites note: 
-  # On golden images for rhel7/rhel8 yum install python2-pip and yum install python3-pip. Did this for future proofing. 
+  # On golden images for rhel7/rhel8 
+  #    yum install python2-pip and yum install python3-pip to use ansible pip module.  Did this for future proofing. 
   # No need to use makepasswd package or expect package via yum. Passwd automatically hashes password and adds to /etc/shadow.
   
   tasks:
   
+ # Required to use the expect module
    - name: Install pexpect through pip
      become: true
      pip:
