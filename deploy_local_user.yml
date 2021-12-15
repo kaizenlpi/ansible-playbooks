@@ -4,10 +4,13 @@
   become_method: sudo
   gather_facts: no
   connection: ssh
-  # Pre-requisites note: 
-  # On golden images for rhel7/rhel8 
-  #    yum install python2-pip and yum install python3-pip to use ansible pip module.  Did this for future proofing. 
-  # No need to use makepasswd package or expect package via yum. Passwd automatically hashes password and adds to /etc/shadow.
+  vars:
+    ansible_python_interpreter: /bin/python3
+
+# Pre-requisites note: 
+# On golden images for rhel7/rhel8, 
+# yum install python2-pip and yum install python3-pip to use ansible pip module.  Did this for future proofing. 
+# No need to use makepasswd package or expect package via yum. Passwd automatically hashes password and adds to /etc/shadow.
   
   tasks:
   
