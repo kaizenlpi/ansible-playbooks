@@ -27,25 +27,31 @@
        gid: 38000
        state: present
 
-   # add agencyUser with VRA blueprint Inputs default value of txdcs for Ansible-ADC and Ansible-SDC. user appends to the passed agency variable value. 
+   # NOTE: created this var first to make it lowercase b/c doing so afterwards was not loggically working. 
+   - name: create var that is lowercase
+     set_fact: 
+       lower_agency: "{{ agency | lower}}"
+
    - name: Create local agency user to remote server
      user:
-       name: "{{ agencyUser }}user"
-       #password: "{{ encrypted_user_password.stdout }}"
+       name: "{{ lower_agency }}user"
        update_password: always
        state: present
-       comment:  897/C//"{{ agencyUser }}"/Agency Admin 
+       comment:  897/C/{{ lower_agency }}user/Agency Admin 
        uid: 38001
        group: sotaadmin
        append: yes
        shell: /bin/bash
        createhome: yes
+     register: agencyUser
+   
+   - debug: var=agencyUser
 
    - name: Set password for user
      expect:
-       command: passwd "{{ agencyUser }}user"
+       command: passwd "{{ lower_agency }}user"
        responses:
          (?i)password: "MySekretPa$$word"  
  
    - name: Force user to change password
-     shell: chage -d 0 {{ agencyUser }}user
+     shell: chage -d 0 {{ lower_agency }}user
