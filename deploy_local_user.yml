@@ -28,7 +28,7 @@
        state: present
 
    # NOTE: created this var first to make it lowercase b/c doing so afterwards was not loggically working. 
-   - name: create var that is lowercase
+   - name: create var that is lowercase coming from the passed "agency" var from VRA
      set_fact: 
        lower_agency: "{{ agency | lower}}"
 
