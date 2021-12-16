@@ -44,8 +44,6 @@
        shell: /bin/bash
        createhome: yes
      register: agencyUser
-   
-   - debug: var=agencyUser
 
    - name: Set password for user
      expect:
