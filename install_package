@@ -1,0 +1,22 @@
+---
+# Purpose: The playbook receives a variable called pkg_list from a json payload and the packages are installed. 
+
+- hosts: all
+  vars:
+     linux_pkg: lsof|httpd|vim
+  tasks:
+  -  name: set facts
+     set_fact:
+       pkg_list: "{{ linux_pkg.split('|') }}"
+
+  - debug: var=pkg_list
+
+  - name: List ansible packages and register result to print with debug later.
+    yum:
+      list: "{{ item }}"
+      state: latest
+    register: result
+    with_items: "{{ pkg_list }}"
+
+  - debug: var=result
+
