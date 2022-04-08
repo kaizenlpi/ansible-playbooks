@@ -1,5 +1,10 @@
 ---
 # use host vars in AWX to set your var there in lieu of the variable passed from VRA host vars. 
+
+# AWX host vars set was: 
+#--- 
+#linux_pkg: nmap|mtr|realmd
+
 - name: the purpose of this playbook is to install packages from the passed host var variable as requested by the customer. 
   hosts: all
   vars:
