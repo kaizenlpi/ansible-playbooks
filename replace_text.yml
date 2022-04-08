@@ -1,0 +1,48 @@
+---
+- name: the purpose of this playbook is to replace the text TXDCS or AGENCY of these files /etc/issue, /etc/issue.net, /etc/motd 
+  hosts: all
+  gather_facts: no
+
+  tasks: 
+  # mb: this works just not elegant
+  - name: replace the text TXDCS with the agency acronynm
+    replace: 
+      path: /etc/issue
+      regexp: TXDCS
+      replace: "{{ agency }}"
+  
+  - name: replace the text TXDCS with the agency acronynm
+    replace: 
+      path: /etc/issue.net
+      regexp: TXDCS
+      replace: "{{ agency }}"
+
+  - name: replace the text TXDCS with the agency acronynm
+    replace: 
+      path: /etc/motd
+      regexp: TXDCS
+      replace: "{{ agency }}"
+
+  - name: replace the text AGENCY with the agency acronynm
+    replace:
+      path: /etc/issue
+      regexp: AGENCY
+      replace: "{{ agency }}"
+  
+  - name: replace the text AGENCY with the agency acronynm
+    replace:
+      path: /etc/issue.net
+      regexp: AGENCY
+      replace: "{{ agency }}"
+  
+  - name: replace the text AGENCY with the agency acronynm
+    replace:
+      path: /etc/motd
+      regexp: AGENCY
+      replace: "{{ agency }}" 
+
+  - name: replace the text TXDCS with the agency acronynm
+    replace: 
+      path: /etc/hosts
+      regexp: TXDCS
+      replace: "{{ agency }}" 
