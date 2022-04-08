@@ -1,22 +1,24 @@
 ---
-# Purpose: The playbook receives a variable called pkg_list from a json payload and the packages are installed. 
-
-- hosts: all
+# use host vars in AWX to set your var there in lieu of the variable passed from VRA host vars. 
+- name: the purpose of this playbook is to install packages from the passed host var variable as requested by the customer. 
+  hosts: all
   vars:
-     linux_pkg: lsof|httpd|vim
+    
+    - linux_pkg:  "{{ linux_pkg }}"
+  
   tasks:
-  -  name: set facts
-     set_fact:
-       pkg_list: "{{ linux_pkg.split('|') }}"
+  
+  - name: set facts
+    set_fact:
+      pkg_list: "{{ linux_pkg.split('|') }}"
 
   - debug: var=pkg_list
 
   - name: List ansible packages and register result to print with debug later.
     yum:
-      list: "{{ item }}"
-      state: latest
+      name: "{{ item }}"
+      state: present
     register: result
     with_items: "{{ pkg_list }}"
 
   - debug: var=result
-
