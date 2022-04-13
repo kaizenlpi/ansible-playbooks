@@ -1,4 +1,7 @@
 ---
+# Note: 4/12/22 mb: we are unable to test new servers as agency builds b/c vlans are tied to agency variable for networking. The workaround is to 
+# run playbooks using AWX host vars to pass the variables to the playbook at run-time for files written below. 
+
 - name: the purpose of this playbook is to replace the text TXDCS or AGENCY of these files /etc/issue, /etc/issue.net, /etc/motd 
   hosts: all
   gather_facts: no
@@ -44,5 +47,35 @@
   - name: replace the text TXDCS with the agency acronynm
     replace: 
       path: /etc/hosts
-      regexp: TXDCS
-      replace: "{{ agency }}" 
+      regexp: TXDCS.TX.GOV
+      replace: "{{ domain }}" 
+
+  - name: replace the text Peer_DNS=yes to Peer_DNS=no
+    replace: 
+      path: /etc/sysconfig/network-scripts/ifcfg-ens192
+      regexp: '^PEERDNS=yes'
+      replace: 'PEERDNS=no' 
+  
+  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+    lineinfile:
+      path: /etc/sysconfig/network-scripts/ifcfg-ens192
+      regexp: '^DOMAIN='
+      state: absent
+
+  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+    lineinfile:
+      path: /etc/sysconfig/network-scripts/ifcfg-ens192
+      regexp: '^DNS1='
+      state: absent
+
+  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+    lineinfile:
+      path: /etc/sysconfig/network-scripts/ifcfg-ens192
+      regexp: '^DNS2='
+      state: absent
+
+  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+    lineinfile:
+      path: /etc/sysconfig/network-scripts/ifcfg-ens192
+      regexp: '^DNS3='
+      state: absent
