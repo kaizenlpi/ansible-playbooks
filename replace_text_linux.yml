@@ -1,4 +1,5 @@
 # Purpose: Replace ALL of the 3 different scenarios of inccorect text written to the /etc/issue, /etc/issue.net, and /etc/motd as well as fixing /etc/hosts and the /etc/sysconfig/network-scripts/ifcfg-ens192 configuration. 
+# Note: The copy module worked best here because it overwrites the file outright with the content you want. It doesn't care what text was in the file originally. This solved the scenario of having 3 differents sets of text in 3 different files. 
 
 - name: Replace text 
   hosts: all
