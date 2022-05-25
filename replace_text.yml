@@ -1,53 +1,33 @@
 ---
-# Note: 4/12/22 mb: we are unable to test new servers as agency builds b/c vlans are tied to agency variable for networking. The workaround is to 
-# run playbooks using AWX host vars to pass the variables to the playbook at run-time for files written below. 
+# Purpose: Replace ALL of the 3 different scenarios of inccorect text written to the /etc/issue, /etc/issue.net, and /etc/motd as well as fixing /etc/hosts and the /etc/sysconfig/network-scripts/ifcfg-ens192 configuration. 
+# Note: The copy module worked best here because it overwrites the file outright with the content you want. It doesn't care what text was in the file originally. This solved the scenario of having 3 differents sets of text in 3 different files. 
 
-- name: the purpose of this playbook is to replace the text TXDCS or AGENCY of these files /etc/issue, /etc/issue.net, /etc/motd 
+- name: Replace text 
   hosts: all
   gather_facts: no
 
   tasks: 
-  # mb: this works just not elegant
-  - name: replace the text TXDCS with the agency acronynm
-    replace: 
-      path: /etc/issue
-      regexp: TXDCS
-      replace: "{{ agency }}"
-  
-  - name: replace the text TXDCS with the agency acronynm
-    replace: 
-      path: /etc/issue.net
-      regexp: TXDCS
-      replace: "{{ agency }}"
 
-  - name: replace the text TXDCS with the agency acronynm
-    replace: 
-      path: /etc/motd
-      regexp: TXDCS
-      replace: "{{ agency }}"
+  - name: replace the text of the file
+    copy:
+      content: "{{ agency }}'s systems must only be used for conducting {{ agency }}'s business or for purposes authorized by management."
+      dest: /etc/issue
 
-  - name: replace the text AGENCY with the agency acronynm
-    replace:
-      path: /etc/issue
-      regexp: AGENCY
-      replace: "{{ agency }}"
-  
-  - name: replace the text AGENCY with the agency acronynm
-    replace:
-      path: /etc/issue.net
-      regexp: AGENCY
-      replace: "{{ agency }}"
-  
-  - name: replace the text AGENCY with the agency acronynm
-    replace:
-      path: /etc/motd
-      regexp: AGENCY
-      replace: "{{ agency }}" 
+  - name: replace the text of the file
+    copy:
+      content: "{{ agency }}'s systems must only be used for conducting {{ agency }}'s business or for purposes authorized by management."
+      dest: /etc/issue.net
 
-  - name: replace the text TXDCS with the agency acronynm
+  - name: replace the text of the file
+    copy:
+      content: "{{ agency }}'s systems must only be used for conducting {{ agency }}'s business or for purposes authorized by management."
+      dest: /etc/motd
+    
+    # Match characters below in each line of file
+  - name: replace the text ABCDE with the agency acronynm
     replace: 
       path: /etc/hosts
-      regexp: TXDCS.TX.GOV
+      regexp: ABCDE.NA.NAV
       replace: "{{ domain }}" 
 
   - name: replace the text Peer_DNS=yes to Peer_DNS=no
@@ -62,19 +42,19 @@
       regexp: '^DOMAIN='
       state: absent
 
-  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+  - name: delete DNS1 line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
     lineinfile:
       path: /etc/sysconfig/network-scripts/ifcfg-ens192
       regexp: '^DNS1='
       state: absent
 
-  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+  - name: delete DNS2= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
     lineinfile:
       path: /etc/sysconfig/network-scripts/ifcfg-ens192
       regexp: '^DNS2='
       state: absent
 
-  - name: delete Domain= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
+  - name: delete DNS3= line if found in /etc/sysconfig/network-scripts/ifcfg-ens192
     lineinfile:
       path: /etc/sysconfig/network-scripts/ifcfg-ens192
       regexp: '^DNS3='
