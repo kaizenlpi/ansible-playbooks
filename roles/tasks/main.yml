@@ -1,0 +1,30 @@
+---
+- name: runs script once a week to create grid files
+  script: 
+    cmd: decomAvamarCreateGridFiles.py
+  register: createGridResults
+  args: 
+    executable: /usr/bin/python3
+  environment: 
+    PYTHONPATH: "files/"
+  delegate_to: localhost
+
+# left here to see our host vars being passed to AWX in stdout in AWX logs. Helpful to use this when beginning the playbook creation to see known host vars. 
+# - name: "ansible | list all known vars and facts"
+#   debug:
+#     var: hostvars[inventory_hostname]
+
+- name: Retires an avamar client and verify backup is current. 
+  script: 
+    cmd: decomAvamarClient.py {{ vmName}} {{ finalBackup}} # technically, these curly brackets aren't required as the hostvars are being passed from VRA. In testing, passed from AWX only.
+  register: retireClientResults
+  args: 
+    executable: /usr/bin/python3
+  environment:
+    PYTHONPATH: "files/"
+  when: backupProduct == "Avamar" 
+  delegate_to: localhost
+  until: retireClientResults.rc == 0
+  retries: 23 
+  delay: 3600 # 60 secs * 60 min = 3600secs/1 hr. 
+  
