@@ -1,0 +1,8 @@
+---
+# Run role from and on local AWX server
+- hosts: localhost
+  connection: local # 10/26/22 MB - added to allow SSH connection to work else connection is unreachable for localhost.  
+  gather_facts: no
+  vars:
+  roles:
+    - roles/decomAvamar
