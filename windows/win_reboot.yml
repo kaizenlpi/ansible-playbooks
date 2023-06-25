@@ -1,8 +1,0 @@
----
-- name: Windows Feature
-  hosts: win
-  gather_facts: no 
-  tasks:
-    - name: Reboot
-      win_reboot:
-      #when: reboot.reboot_required
