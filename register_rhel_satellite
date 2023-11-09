@@ -16,16 +16,6 @@
       marker: "# {mark} Required for Satellite 6 Integration"
     ignore_errors: no
   
-  #- name: Register with activationkey matching Red Hat Enterprise Server Version 7
-  #  redhat_subscription:
-  #    state: present
-  #    force_register: no
-  #    activationkey: default_r7
-      #auto_attach: true
-  #    org_id: XXXX
-   # when:
-   #   - ansible_distribution_major_version == "7"
-  
   - name: register with activation key matching Red Hat Enterprise Server Version 7 
     shell: subscription-manager register --org="XXXX" --activationkey="default_r7" --force ; rm -rf /var/cache/yum ; yum clean all ; subscription-manager attach --auto; subscription-manager refresh
     when:
@@ -35,12 +25,3 @@
     shell: subscription-manager register --org="XXXX" --activationkey="default_r8" --force ; rm -rf /var/cache/yum ; yum clean all ; subscription-manager attach --auto; subscription-manager refresh
     when:
       - ansible_distribution_major_version == "8"
- # - name: Register with activationkey matching Red Hat Enterprise Server Version 8
- #   redhat_subscription:
- #     state: present
- #     force_register: no
- #     activationkey: default_r8
-      #auto_attach: true 
-  #    org_id: XXXX
-  #  when:
-  #    - ansible_distribution_major_version == "8"
